@@ -10,31 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) Check out the full history so we can commit back
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      # 2) Install Python and Jupyter tooling
       - name: Set up Python 
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install notebook & nbconvert
+      - name: Install nbconvert & notebook
         run: pip install notebook nbconvert
 
+      # 3) Clear outputs from every .ipynb file
       - name: Clear notebook outputs
         run: |
           find . -type f -name "*.ipynb" -not -path "./.git/*" -print0 \
             | xargs -0 jupyter nbconvert --clear-output --inplace
 
-      - name: Debug: "show changes"
-        run: |
-          echo "=== Git status ==="
-          git status
-          echo "=== Git diff ==="
-          git --no-pager diff
-
+      # 4) Commit & push any changes
       - name: Auto‑commit cleared notebooks
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -42,5 +39,3 @@ jobs:
           file_pattern: "**/*.ipynb"
           author_name: "github-actions[bot]"
           author_email: "41898282+github-actions[bot]@users.noreply.github.com"
-          # Set this to true if you want a commit even when unchanged:
-          allow_empty_commit: true
