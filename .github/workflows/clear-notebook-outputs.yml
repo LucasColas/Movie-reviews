@@ -38,5 +38,5 @@ jobs:
         with:
           commit_message: "ci: clear all notebook outputs"
           file_pattern: "*.ipynb"
-          author_name: "github-actions[bot]"
+          commit_user_name: "github-actions[bot]"
           
