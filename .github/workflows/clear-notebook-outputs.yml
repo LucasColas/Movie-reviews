@@ -8,6 +8,8 @@ on:
 jobs:
   clear-notebooks:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # This is needed to push commits
 
     steps:
       # 1) Check out the full history so we can commit back
