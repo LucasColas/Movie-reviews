@@ -1,55 +1,54 @@
-name: Clear Notebook Outputs
+name: Clean Notebook Outputs
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  clear-notebooks:
+  clean-notebooks:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # This is needed to push commits
-
+    
     steps:
-      - name: Hello, is this workflow running?
-        run: echo "✅ workflow triggered on $(date)"
-        
-      # 1) Check out the full history so we can commit back
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: true 
-
-      # 2) Install Python and Jupyter tooling
-      - name: Set up Python 
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install nbconvert & notebook
-        run: pip install notebook nbconvert
-
-      # 3) Clear outputs from every .ipynb file
-      - name: Clear notebook outputs
-        run: |
-          find . -type f -name "*.ipynb" -not -path "./.git/*" -print0 \
-            | xargs -0 jupyter nbconvert --clear-output --inplace
-
-      # Add this step before the commit step
-      - name: Check for changes
-        run: |
-          git status
-          git diff --name-only
-          echo "Files that would be changed:"
-          find . -name "*.ipynb" -exec echo "Processing: {}" \; -exec jupyter nbconvert --clear-output --to notebook --stdout {} \; > /dev/null
-
-      # 4) Commit & push any changes
-      - name: Auto‑commit cleared notebooks
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "ci: clear all notebook outputs"
-          file_pattern: "**/*.ipynb"
-          author_name: "github-actions[bot]"
-          author_email: "41898282+github-actions[bot]@users.noreply.github.com"
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jupyter nbconvert
+    
+    - name: Find and clean notebook outputs
+      run: |
+        # Find all .ipynb files and clean their outputs
+        find . -name "*.ipynb" -type f | while read notebook; do
+          echo "Cleaning outputs from: $notebook"
+          jupyter nbconvert --clear-output --inplace "$notebook"
+        done
+    
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit cleaned notebooks
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git commit -m "Clean notebook outputs [skip ci]"
+        git push
