@@ -1,0 +1,42 @@
+# .github/workflows/clear-notebook-outputs.yml
+name: “Clear Notebook Outputs”
+
+on:
+  push:
+    branches:
+      - main    # or whichever branches you care about
+  pull_request:
+
+jobs:
+  clear_outputs:
+    runs-on: ubuntu-latest
+    steps:
+      # 1) Check out the repo
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0      # needed for committing back
+
+      # 2) Set up Python
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      # 3) Install nbconvert
+      - run: pip install nbformat nbconvert
+
+      # 4) Clear outputs from every .ipynb
+      - name: Clear notebook outputs
+        shell: bash
+        run: |
+          # find all notebooks (excluding .git) and clear their outputs
+          find . -name "*.ipynb" -not -path "./.git/*" -print0 \
+            | xargs -0 jupyter nbconvert --clear-output --inplace
+
+      # 5) Commit & push any changes
+      - name: Commit cleared notebooks
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "ci: clear all notebook outputs"
+          file_pattern: "*.ipynb"
+          author_name: "github-actions[bot]"
+          
