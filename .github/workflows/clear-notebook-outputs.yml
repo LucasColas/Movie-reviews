@@ -33,6 +33,14 @@ jobs:
           find . -type f -name "*.ipynb" -not -path "./.git/*" -print0 \
             | xargs -0 jupyter nbconvert --clear-output --inplace
 
+      # Add this step before the commit step
+      - name: Check for changes
+        run: |
+          git status
+          git diff --name-only
+          echo "Files that would be changed:"
+          find . -name "*.ipynb" -exec echo "Processing: {}" \; -exec jupyter nbconvert --clear-output --to notebook --stdout {} \; > /dev/null
+
       # 4) Commit & push any changes
       - name: Auto‑commit cleared notebooks
         uses: stefanzweifel/git-auto-commit-action@v4
