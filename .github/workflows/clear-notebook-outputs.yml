@@ -1,42 +1,41 @@
-# .github/workflows/clear-notebook-outputs.yml
-name: “Clear Notebook Outputs”
+name: Clear Notebook Outputs
 
 on:
   push:
-    branches:
-      - main    # or whichever branches you care about
+    branches: [ main ]
   pull_request:
 
 jobs:
-  clear_outputs:
+  clear-notebooks:
     runs-on: ubuntu-latest
-    steps:
-      # 1) Check out the repo
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0      # needed for committing back
 
-      # 2) Set up Python
-      - uses: actions/setup-python@v4
+    steps:
+      # 1) Check out the full history so we can commit back
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 2) Install Python and Jupyter tooling
+      - name: Set up Python 
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      # 3) Install nbconvert
-      - run: pip install nbformat nbconvert
+      - name: Install nbconvert & notebook
+        run: pip install notebook nbconvert
 
-      # 4) Clear outputs from every .ipynb
+      # 3) Clear outputs from every .ipynb file
       - name: Clear notebook outputs
-        shell: bash
         run: |
-          # find all notebooks (excluding .git) and clear their outputs
-          find . -name "*.ipynb" -not -path "./.git/*" -print0 \
+          find . -type f -name "*.ipynb" -not -path "./.git/*" -print0 \
             | xargs -0 jupyter nbconvert --clear-output --inplace
 
-      # 5) Commit & push any changes
-      - name: Commit cleared notebooks
+      # 4) Commit & push any changes
+      - name: Auto‑commit cleared notebooks
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "ci: clear all notebook outputs"
-          file_pattern: "*.ipynb"
-          commit_user_name: "github-actions[bot]"
-          
+          file_pattern: "**/*.ipynb"
+          author_name: "github-actions[bot]"
+          author_email: "41898282+github-actions[bot]@users.noreply.github.com"
